@@ -1,0 +1,272 @@
+/**
+ * ============================================================================
+ *  SISTEMA: Control OBS Remoto (Celular / Tablet) + Biblia e Himnario
+ *  AUTOR:   Ing. Rubén Humberto Armendáriz Tamayo
+ *  TÍTULO:  Ingeniero en Sistemas Computacionales
+ *  GITHUB:  https://github.com/lobosolitarior-hub/controlOBS-Biblia-himnario
+ * ============================================================================
+ */
+
+const { app, BrowserWindow, Tray, Menu, shell, clipboard, dialog, nativeImage } = require('electron');
+const path = require('path');
+
+// Evitar que se abran dos instancias al mismo tiempo; si el usuario vuelve a hacer
+// doble clic en el Acceso Directo del Escritorio, mostrar la ventana con el Código QR
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+  process.exit(0);
+}
+
+let tray = null;
+let mainWindow = null;
+let isQuitting = false;
+let serverModule = null;
+
+// Icono PNG 16x16 en base64 para la bandeja del sistema (Windows Tray / Mac Menu Bar)
+const TRAY_ICON_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWklEQVQ4T2NkoBAwUqifYdQABgZGBgY2BgaG/0g8XAw2AJsB2AwgZiA2AzA14PIwNoMJsRkYGJ7jciM2A4g1gBjD8LkBn4H43IDNDcRmALGG4fIwIbaMAgB5hBMR73qN5AAAAABJRU5ErkJggg==';
+
+function createTrayIcon() {
+  const iconPath = path.join(__dirname, 'public', 'icon-tray.png');
+  try {
+    const img = nativeImage.createFromPath(iconPath);
+    if (!img.isEmpty()) {
+      return img.resize({ width: 18, height: 18 });
+    }
+  } catch {}
+  return nativeImage.createFromDataURL(`data:image/png;base64,${TRAY_ICON_BASE64}`);
+}
+
+function getActivePort() {
+  return (serverModule && typeof serverModule.getPort === 'function' && serverModule.getPort()) || 3000;
+}
+
+function getMobileUrl() {
+  const port = getActivePort();
+  const ips =
+    (serverModule &&
+      typeof serverModule.getLocalNetworkIPs === 'function' &&
+      serverModule.getLocalNetworkIPs()) ||
+    [];
+  const ip = ips.length > 0 ? ips[0].address : 'localhost';
+  return `http://${ip}:${port}/remoto`;
+}
+
+function openRemoteControlWindow(options = {}) {
+  const port = getActivePort();
+  const query = options.query || 'desktop=1';
+  const targetUrl = `http://localhost:${port}/remoto?${query}`;
+
+  if (mainWindow) {
+    if (options.query) {
+      mainWindow.loadURL(targetUrl);
+    }
+    mainWindow.show();
+    mainWindow.focus();
+    if (process.platform === 'darwin' && app.dock) {
+      app.dock.show();
+    }
+    return;
+  }
+
+  mainWindow = new BrowserWindow({
+    width: 760,
+    height: 820,
+    minWidth: 380,
+    minHeight: 560,
+    title: 'Control OBS Remoto — Código QR y Configuraciones',
+    backgroundColor: '#090d16',
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  mainWindow.loadURL(targetUrl);
+
+  // Al cerrar la ventana, mantener el servidor activo en la bandeja del sistema
+  // para que el celular/tablet y OBS Studio sigan funcionando sin interrupción
+  mainWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      mainWindow.hide();
+      if (process.platform === 'darwin' && app.dock) {
+        app.dock.hide();
+      }
+    }
+  });
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.show();
+  }
+}
+
+async function pickCustomAudioFolder() {
+  const result = await dialog.showOpenDialog({
+    title: 'Selecciona la carpeta que contiene las subcarpetas Cantado e Instrumental',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+
+  if (!result.canceled && result.filePaths && result.filePaths[0]) {
+    const chosen = result.filePaths[0];
+    if (serverModule && typeof serverModule.setAudioRootDir === 'function') {
+      serverModule.setAudioRootDir(chosen);
+      rebuildTrayMenu();
+    }
+  }
+}
+
+function rebuildTrayMenu() {
+  if (!tray) return;
+  const port = getActivePort();
+  const mobileUrl = getMobileUrl();
+  const loginSettings = app.getLoginItemSettings();
+  const autoStartEnabled = Boolean(loginSettings.openAtLogin);
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: `🟢 Control OBS Remoto (Puerto ${port})`,
+      enabled: false,
+    },
+    {
+      label: `📱 Wi-Fi Celular/Tablet: ${mobileUrl}`,
+      click: () => {
+        clipboard.writeText(mobileUrl);
+        openRemoteControlWindow({ query: 'desktop=1&qr=1' });
+      },
+    },
+    { type: 'separator' },
+    {
+      label: '📱 Ver Código QR para conectar Celular / Tablet',
+      click: () => openRemoteControlWindow({ query: 'desktop=1&qr=1' }),
+    },
+    {
+      label: '⚙️ Abrir Configuraciones de OBS y Escenas',
+      click: () => openRemoteControlWindow({ query: 'desktop=1&config=1' }),
+    },
+    {
+      label: '🖥️ Abrir ventana del Centro de Control',
+      click: () => openRemoteControlWindow({ query: 'desktop=1' }),
+    },
+    { type: 'separator' },
+    {
+      label: '📂 Abrir carpeta para copiar MP3 (Cantado / Instrumental)',
+      click: () => {
+        if (serverModule && typeof serverModule.openAudioFolderInOS === 'function') {
+          serverModule.openAudioFolderInOS();
+        }
+      },
+    },
+    {
+      label: '📁 Elegir otra carpeta donde tengas tus MP3...',
+      click: () => pickCustomAudioFolder(),
+    },
+    { type: 'separator' },
+    {
+      label: '📋 Copiar enlaces (URLs) para OBS Studio',
+      submenu: [
+        {
+          label: `Control Móvil / Tablet: ${mobileUrl}`,
+          click: () => clipboard.writeText(mobileUrl),
+        },
+        {
+          label: `Panel de Control (Dock): http://localhost:${port}/panel`,
+          click: () => clipboard.writeText(`http://localhost:${port}/panel`),
+        },
+        {
+          label: `Escena Himnario: http://localhost:${port}/proyeccion`,
+          click: () => clipboard.writeText(`http://localhost:${port}/proyeccion`),
+        },
+        {
+          label: `Escena Biblia: http://localhost:${port}/biblia`,
+          click: () => clipboard.writeText(`http://localhost:${port}/biblia`),
+        },
+      ],
+    },
+    {
+      label: '🚀 Iniciar automáticamente al encender Windows / Mac',
+      type: 'checkbox',
+      checked: autoStartEnabled,
+      click: (menuItem) => {
+        app.setLoginItemSettings({
+          openAtLogin: menuItem.checked,
+          openAsHidden: true,
+          args: ['--hidden'],
+        });
+        rebuildTrayMenu();
+      },
+    },
+    { type: 'separator' },
+    {
+      label: '👨‍💻 Autor: Ing. Rubén H. Armendáriz Tamayo (Agradecimientos)',
+      click: () => shell.openExternal(`http://localhost:${port}/autor`),
+    },
+    { type: 'separator' },
+    {
+      label: '❌ Detener servidor y salir',
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setToolTip(`Control OBS Remoto (${mobileUrl})`);
+  tray.setContextMenu(contextMenu);
+}
+
+// Cuando el usuario hace doble clic en el Acceso Directo del Escritorio mientras ya está corriendo,
+// abrir de inmediato la ventana con el Código QR y acceso a las Configuraciones
+app.on('second-instance', () => {
+  openRemoteControlWindow({ query: 'desktop=1&qr=1' });
+});
+
+app.whenReady().then(() => {
+  process.env.APP_USER_DATA_DIR = app.getPath('userData');
+  process.env.APP_DOCUMENTS_DIR = app.getPath('documents');
+
+  serverModule = require('./server.js');
+
+  if (app.isPackaged) {
+    const currentLogin = app.getLoginItemSettings();
+    if (currentLogin.openAtLogin === false && !process.env.SKIP_DEFAULT_AUTOSTART) {
+      app.setLoginItemSettings({
+        openAtLogin: true,
+        openAsHidden: true,
+        args: ['--hidden'],
+      });
+    }
+  }
+
+  tray = new Tray(createTrayIcon());
+  tray.on('double-click', () => openRemoteControlWindow({ query: 'desktop=1' }));
+
+  const launchedHidden =
+    process.argv.includes('--hidden') ||
+    Boolean(app.getLoginItemSettings().wasOpenedAsHidden);
+
+  setTimeout(() => {
+    rebuildTrayMenu();
+    // Si el usuario abrió el programa desde el instalador o desde el Acceso Directo del Escritorio,
+    // mostrar la ventana automáticamente con el Código QR y el panel de configuración
+    if (!launchedHidden) {
+      openRemoteControlWindow({ query: 'desktop=1' });
+    } else if (process.platform === 'darwin' && app.dock) {
+      app.dock.hide();
+    }
+  }, 700);
+});
+
+app.on('window-all-closed', (e) => {
+  e.preventDefault();
+});
+
+app.on('before-quit', () => {
+  isQuitting = true;
+});
