@@ -84,7 +84,23 @@ Puedes abrir esta carpeta directamente con el botón **`📂 Abrir Carpeta para 
 
 ---
 
-## 💻 Desarrollo desde el código fuente (Node.js)
+## 🛠️ 6. Cómo Actualizar, Reinstalar o Desinstalar sin bloqueos
+
+Como el programa mantiene su servidor activo en segundo plano para el celular y para OBS Studio, incluimos herramientas automáticas para que **actualizar, reinstalar o desinstalar sea 100% transparente y nunca marque error de "Aplicación en uso"**:
+
+1. **En Windows (Automático en el Instalador):**
+   - Al ejecutar una nueva versión de **`Control OBS Remoto Setup.exe`** (o al ejecutar el Desinstalador de Windows), el propio instalador **cierra automáticamente en segundo plano** la versión anterior antes de copiar o borrar archivos (`build/installer.nsh`), sin que tengas que buscar el icono junto al reloj.
+2. **Desde dentro de la propia pantalla del programa (Windows y Mac):**
+   - En el **Panel de Cabina** o dentro de **`⚙️ Configurar OBS y Escenas`**, tienes dos botones directos para usuarios no técnicos:
+     - **`🛑 Cerrar por completo (Actualizar/Desinstalar)`:** Detiene el servidor en segundo plano y cierra el icono de la barra de tareas para que puedas arrastrar una nueva versión en Mac o desinstalar al instante.
+     - **`🧹 Restaurar Ajustes`:** Regresa la configuración a sus valores originales de fábrica si alguien movió algún ajuste por error (conservando intactos todos tus archivos MP3).
+3. **Scripts de apoyo de 1 clic (en la carpeta `herramientas/`):**
+   - **Mac:** Doble clic en `herramientas/Desinstalar-o-Actualizar-Mac.command`.
+   - **Windows:** Doble clic en `herramientas/Desinstalar-o-Actualizar-Windows.bat`.
+
+---
+
+## 💻 7. Desarrollo desde el código fuente (Node.js)
 
 ```bash
 # Instalar dependencias

@@ -1528,6 +1528,70 @@ app.post('/api/obs/config', async (req, res) => {
 });
 
 // ============================================================================
+// HERRAMIENTAS DE MANTENIMIENTO, REINICIO Y DESINSTALACIÓN / ACTUALIZACIÓN LIMPIA
+// ============================================================================
+let externalQuitHandler = null;
+
+function setQuitHandler(fn) {
+  externalQuitHandler = fn;
+}
+
+async function gracefulShutdown() {
+  try {
+    stopSoloLetraTimer();
+    if (clyBridgeSocket) {
+      clyBridgeSocket.disconnect();
+    }
+    await obs.disconnect().catch(() => {});
+    io.close();
+    server.close();
+  } catch {}
+}
+
+// Restaurar configuración de fábrica (por si algo quedó mal configurado)
+app.post('/api/app/reset-config', async (req, res) => {
+  obsConfig = {
+    url: 'ws://127.0.0.1:4455',
+    password: '',
+    sceneName: 'Himnario',
+    bibleBgSceneName: 'Biblia',
+    bibleCamSceneName: 'Biblia Camara',
+    audioRootDir: DEFAULT_USER_AUDIO_ROOT,
+    autoSwitchScene: true,
+    soloLetraIntervalSec: 12,
+    useOnlineFallback: true,
+    customShortcuts: JSON.parse(JSON.stringify(DEFAULT_SHORTCUTS)),
+  };
+  saveConfig();
+  await connectOBS();
+  io.emit('shortcuts:update', obsConfig.customShortcuts);
+  res.json({
+    ok: true,
+    connected: obsConnected,
+    config: getSafeObsConfig(),
+  });
+});
+
+// Cerrar el servidor en segundo plano por completo (para poder actualizar o desinstalar sin bloqueos)
+app.post('/api/app/quit', async (req, res) => {
+  const { disableAutoStart } = req.body || {};
+  res.json({
+    ok: true,
+    message:
+      'El programa y el servidor en segundo plano se han cerrado por completo. Ahora puedes actualizar, reinstalar o desinstalar sin bloqueos.',
+  });
+
+  setTimeout(async () => {
+    await gracefulShutdown();
+    if (typeof externalQuitHandler === 'function') {
+      externalQuitHandler({ disableAutoStart: Boolean(disableAutoStart) });
+    } else {
+      process.exit(0);
+    }
+  }, 250);
+});
+
+// ============================================================================
 // SOCKET.IO: EVENTOS EN TIEMPO REAL PARA CELULAR / TABLET / OBS
 // ============================================================================
 io.on('connection', (socket) => {
@@ -2035,6 +2099,16 @@ function startServer(portToTry) {
 
 startServer(PRIMARY_PORT);
 
+process.on('SIGTERM', async () => {
+  await gracefulShutdown();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  await gracefulShutdown();
+  process.exit(0);
+});
+
 module.exports = {
   app,
   server,
@@ -2043,4 +2117,6 @@ module.exports = {
   obsConfig,
   openAudioFolderInOS,
   setAudioRootDir,
+  setQuitHandler,
+  gracefulShutdown,
 };

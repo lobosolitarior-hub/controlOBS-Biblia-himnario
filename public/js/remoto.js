@@ -1364,6 +1364,66 @@
     await fetch('/api/audio/open-folder', { method: 'POST' });
   });
 
+  const btnHubQuitApp = document.getElementById('btnHubQuitApp');
+  const btnQuitAppFromModal = document.getElementById('btnQuitAppFromModal');
+  const btnResetFactoryConfig = document.getElementById('btnResetFactoryConfig');
+
+  async function requestFullShutdown() {
+    const confirmClose = window.confirm(
+      '¿Deseas cerrar el programa y detener el servidor en segundo plano por completo?\n\nHaz esto antes de actualizar, reinstalar o desinstalar la aplicación para evitar archivos en uso.'
+    );
+    if (!confirmClose) return;
+    try {
+      await fetch('/api/app/quit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disableAutoStart: false }),
+      });
+      document.body.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center;background:#090d16;color:#f1f5f9;font-family:sans-serif">
+          <div style="font-size:3rem;margin-bottom:12px">✅</div>
+          <h2 style="margin:0 0 8px">Programa cerrado por completo</h2>
+          <p style="color:#94a3b8;max-width:460px;line-height:1.5">
+            El servidor en segundo plano se ha detenido limpiamente. Ahora puedes instalar una actualización, reinstalar o desinstalar el programa sin ningún bloqueo.
+          </p>
+        </div>
+      `;
+    } catch {}
+  }
+
+  if (btnHubQuitApp) {
+    btnHubQuitApp.addEventListener('click', requestFullShutdown);
+  }
+  if (btnQuitAppFromModal) {
+    btnQuitAppFromModal.addEventListener('click', requestFullShutdown);
+  }
+
+  if (btnResetFactoryConfig) {
+    btnResetFactoryConfig.addEventListener('click', async () => {
+      if (
+        !window.confirm(
+          '¿Restaurar todos los ajustes de conexión, nombres de escenas y atajos a los valores originales de fábrica? (Tus archivos MP3 no se borrarán).'
+        )
+      ) {
+        return;
+      }
+      try {
+        const res = await fetch('/api/app/reset-config', { method: 'POST' });
+        const data = await res.json();
+        if (data && data.config) {
+          obsUrlInput.value = data.config.url || 'ws://127.0.0.1:4455';
+          obsPassInput.value = '';
+          obsSceneInput.value = data.config.sceneName || 'Himnario';
+          obsBibleBgInput.value = data.config.bibleBgSceneName || 'Biblia';
+          obsBibleCamInput.value = data.config.bibleCamSceneName || 'Biblia Camara';
+          obsSoloLetraSecInput.value = data.config.soloLetraIntervalSec || 12;
+          obsAudioRootInput.value = data.config.audioRootDir || '';
+        }
+        window.alert('✅ Ajustes restaurados de fábrica correctamente.');
+      } catch {}
+    });
+  }
+
   obsConfigForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {

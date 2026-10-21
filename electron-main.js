@@ -10,18 +10,42 @@
 const { app, BrowserWindow, Tray, Menu, shell, clipboard, dialog, nativeImage } = require('electron');
 const path = require('path');
 
-// Evitar que se abran dos instancias al mismo tiempo; si el usuario vuelve a hacer
-// doble clic en el Acceso Directo del Escritorio, mostrar la ventana con el Código QR
+let tray = null;
+let mainWindow = null;
+let isQuitting = false;
+let serverModule = null;
+
+function performCleanExit(options = {}) {
+  isQuitting = true;
+  if (options.disableAutoStart) {
+    try {
+      app.setLoginItemSettings({ openAtLogin: false });
+    } catch {}
+  }
+  if (tray) {
+    try {
+      tray.destroy();
+      tray = null;
+    } catch {}
+  }
+  if (serverModule && typeof serverModule.gracefulShutdown === 'function') {
+    serverModule.gracefulShutdown().finally(() => {
+      app.quit();
+      setTimeout(() => process.exit(0), 400);
+    });
+  } else {
+    app.quit();
+    setTimeout(() => process.exit(0), 400);
+  }
+}
+
+// Evitar que se abran dos instancias al mismo tiempo; si otra instancia o instalador
+// pide cerrar (--quit / --uninstall), cerramos limpiamente la instancia activa.
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
   process.exit(0);
 }
-
-let tray = null;
-let mainWindow = null;
-let isQuitting = false;
-let serverModule = null;
 
 // Icono PNG 16x16 en base64 para la bandeja del sistema (Windows Tray / Mac Menu Bar)
 const TRAY_ICON_BASE64 =
@@ -71,8 +95,8 @@ function openRemoteControlWindow(options = {}) {
   }
 
   mainWindow = new BrowserWindow({
-    width: 760,
-    height: 820,
+    width: 780,
+    height: 840,
     minWidth: 380,
     minHeight: 560,
     title: 'Control OBS Remoto — Código QR y Configuraciones',
@@ -86,7 +110,7 @@ function openRemoteControlWindow(options = {}) {
 
   mainWindow.loadURL(targetUrl);
 
-  // Al cerrar la ventana, mantener el servidor activo en la bandeja del sistema
+  // Al cerrar la ventana con la X, mantener el servidor activo en la bandeja del sistema
   // para que el celular/tablet y OBS Studio sigan funcionando sin interrupción
   mainWindow.on('close', (e) => {
     if (!isQuitting) {
@@ -202,6 +226,19 @@ function rebuildTrayMenu() {
         rebuildTrayMenu();
       },
     },
+    {
+      label: '🛠️ Mantenimiento (Actualizar / Reinstalar / Desinstalar)',
+      submenu: [
+        {
+          label: '🛑 Cerrar programa por completo (Listo para Actualizar)',
+          click: () => performCleanExit({ disableAutoStart: false }),
+        },
+        {
+          label: '🗑️ Desactivar auto-inicio y cerrar (Listo para Desinstalar)',
+          click: () => performCleanExit({ disableAutoStart: true }),
+        },
+      ],
+    },
     { type: 'separator' },
     {
       label: '👨‍💻 Autor: Ing. Rubén H. Armendáriz Tamayo (Agradecimientos)',
@@ -209,11 +246,8 @@ function rebuildTrayMenu() {
     },
     { type: 'separator' },
     {
-      label: '❌ Detener servidor y salir',
-      click: () => {
-        isQuitting = true;
-        app.quit();
-      },
+      label: '❌ Detener servidor y salir por completo',
+      click: () => performCleanExit({ disableAutoStart: false }),
     },
   ]);
 
@@ -221,17 +255,35 @@ function rebuildTrayMenu() {
   tray.setContextMenu(contextMenu);
 }
 
-// Cuando el usuario hace doble clic en el Acceso Directo del Escritorio mientras ya está corriendo,
-// abrir de inmediato la ventana con el Código QR y acceso a las Configuraciones
-app.on('second-instance', () => {
+app.on('second-instance', (_event, commandLine = []) => {
+  if (
+    commandLine.includes('--quit') ||
+    commandLine.includes('--uninstall') ||
+    commandLine.includes('--updated')
+  ) {
+    performCleanExit({
+      disableAutoStart: commandLine.includes('--uninstall'),
+    });
+    return;
+  }
   openRemoteControlWindow({ query: 'desktop=1&qr=1' });
 });
 
 app.whenReady().then(() => {
+  if (process.argv.includes('--quit') || process.argv.includes('--uninstall')) {
+    performCleanExit({
+      disableAutoStart: process.argv.includes('--uninstall'),
+    });
+    return;
+  }
+
   process.env.APP_USER_DATA_DIR = app.getPath('userData');
   process.env.APP_DOCUMENTS_DIR = app.getPath('documents');
 
   serverModule = require('./server.js');
+  if (serverModule && typeof serverModule.setQuitHandler === 'function') {
+    serverModule.setQuitHandler((opts) => performCleanExit(opts));
+  }
 
   if (app.isPackaged) {
     const currentLogin = app.getLoginItemSettings();
@@ -253,8 +305,6 @@ app.whenReady().then(() => {
 
   setTimeout(() => {
     rebuildTrayMenu();
-    // Si el usuario abrió el programa desde el instalador o desde el Acceso Directo del Escritorio,
-    // mostrar la ventana automáticamente con el Código QR y el panel de configuración
     if (!launchedHidden) {
       openRemoteControlWindow({ query: 'desktop=1' });
     } else if (process.platform === 'darwin' && app.dock) {

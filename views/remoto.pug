@@ -56,6 +56,7 @@ html(lang="es")
                 button.pill-action-btn(type="button", data-copy-path="/proyeccion") 📋 Copiar URL Himnario
                 button.pill-action-btn(type="button", data-copy-path="/biblia") 📋 Copiar URL Biblia
                 button.pill-action-btn(type="button", data-copy-path="/panel") 📋 Copiar URL Dock OBS
+                button#btnHubQuitApp.pill-action-btn.danger(type="button", title="Cierra el servidor en segundo plano para poder actualizar o desinstalar sin bloqueos") 🛑 Cerrar por completo (Actualizar/Desinstalar)
 
     //- =========================================================
     //- MONITOR EN VIVO DE LA SALIDA DE OBS (COLAPSABLE)
@@ -499,9 +500,13 @@ html(lang="es")
             label Carpeta de audios MP3 (Cantado / Instrumental)
             input#obsAudioRootInput.remote-input(type="text", value=obsConfig.audioRootDir)
 
-          .modal-footer(style="margin-top:6px")
-            button#btnOpenAudioFolder.pill-action-btn(type="button") 📂 Abrir carpeta MP3
+          .modal-footer(style="margin-top:6px;justify-content:space-between;flex-wrap:wrap")
+            button#btnOpenAudioFolder.pill-action-btn(type="button") 📂 Carpeta MP3
+            button#btnResetFactoryConfig.pill-action-btn(type="button", title="Restaurar configuración original") 🧹 Restaurar Ajustes
             button.btn-primary-action(type="submit") Guardar y Conectar
+
+          .maintenance-row(style="display:flex;justify-content:center;margin-top:6px")
+            button#btnQuitAppFromModal.pill-action-btn.danger(type="button", style="width:100%") 🛑 Cerrar programa por completo (Para Actualizar o Desinstalar)
 
           .modal-author-credit
             strong.modal-author-name Ing. Rubén Humberto Armendáriz Tamayo
