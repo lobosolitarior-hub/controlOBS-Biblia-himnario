@@ -9,6 +9,7 @@
 
 const { app, BrowserWindow, Tray, Menu, shell, clipboard, dialog, nativeImage } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let tray = null;
 let mainWindow = null;
@@ -52,14 +53,33 @@ const TRAY_ICON_BASE64 =
   'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWklEQVQ4T2NkoBAwUqifYdQABgZGBgY2BgaG/0g8XAw2AJsB2AwgZiA2AzA14PIwNoMJsRkYGJ7jciM2A4g1gBjD8LkBn4H43IDNDcRmALGG4fIwIbaMAgB5hBMR73qN5AAAAABJRU5ErkJggg==';
 
 function createTrayIcon() {
-  const iconPath = path.join(__dirname, 'public', 'icon-tray.png');
+  const iconTrayPath = path.join(__dirname, 'public', 'icon-tray.png');
+  const iconPngPath = path.join(__dirname, 'public', 'icon.png');
+  const iconIcoPath = path.join(__dirname, 'public', 'icon.ico');
   try {
-    const img = nativeImage.createFromPath(iconPath);
+    if (process.platform === 'win32' && fs.existsSync(iconIcoPath)) {
+      const icoImg = nativeImage.createFromPath(iconIcoPath);
+      if (!icoImg.isEmpty()) return icoImg.resize({ width: 16, height: 16 });
+    }
+    const candidate = fs.existsSync(iconTrayPath) ? iconTrayPath : iconPngPath;
+    const img = nativeImage.createFromPath(candidate);
     if (!img.isEmpty()) {
       return img.resize({ width: 18, height: 18 });
     }
   } catch {}
   return nativeImage.createFromDataURL(`data:image/png;base64,${TRAY_ICON_BASE64}`);
+}
+
+function getWindowIcon() {
+  const icoPath = path.join(__dirname, 'public', 'icon.ico');
+  const pngPath = path.join(__dirname, 'public', 'icon.png');
+  if (process.platform === 'win32' && fs.existsSync(icoPath)) {
+    return icoPath;
+  }
+  if (fs.existsSync(pngPath)) {
+    return pngPath;
+  }
+  return undefined;
 }
 
 function getActivePort() {
@@ -102,6 +122,7 @@ function openRemoteControlWindow(options = {}) {
     title: 'Control OBS Remoto — Código QR y Configuraciones',
     backgroundColor: '#090d16',
     autoHideMenuBar: true,
+    icon: getWindowIcon(),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

@@ -1,7 +1,7 @@
 {
   "name": "control-obs-remoto",
   "productName": "Control OBS Remoto",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Centro de Control Remoto Inalámbrico (Celular / Tablet) para OBS Studio con Monitor en Vivo, Escenas, Teclado/Atajos Personalizables, Multimedia, Santa Biblia (RVR1960/DHH) e Himnario Adventista (614 himnos)",
   "author": "Ing. Rubén Humberto Armendáriz Tamayo <lobosolitarior@gmail.com>",
   "license": "MIT",
@@ -29,6 +29,7 @@
   "build": {
     "appId": "org.adventista.controlobsremoto",
     "productName": "Control OBS Remoto",
+    "icon": "build/icon.png",
     "files": [
       "electron-main.js",
       "server.js",
@@ -44,10 +45,10 @@
       "!Instrumental/**/*",
       "!instrumental/**/*",
       "!instrumntal/**/*",
-      "!imagenes/**/*",
-      "!*.png"
+      "!imagenes/**/*"
     ],
     "mac": {
+      "icon": "build/icon.icns",
       "category": "public.app-category.utilities",
       "target": [
         "dmg",
@@ -55,6 +56,7 @@
       ]
     },
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "nsis",
         "portable"
@@ -66,6 +68,9 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "Control OBS Remoto",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
       "include": "build/installer.nsh"

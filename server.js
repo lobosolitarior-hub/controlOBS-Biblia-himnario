@@ -2066,21 +2066,35 @@ io.on('connection', (socket) => {
 });
 
 // Iniciar servidor escuchando en 0.0.0.0 para aceptar conexiones desde celulares y tablets en la red Wi-Fi
-function startServer(portToTry) {
-  server.once('error', (err) => {
-    if (err && err.code === 'EADDRINUSE' && portToTry === PRIMARY_PORT) {
-      console.log(
-        `ℹ️ El puerto ${PRIMARY_PORT} ya está en uso (probablemente por Biblia e Himnario OBS). Iniciando en puerto ${FALLBACK_PORT} y enlazando automáticamente...`
-      );
-      activePort = FALLBACK_PORT;
-      startServer(FALLBACK_PORT);
-    } else {
-      console.error('Error en el servidor HTTP:', err);
-    }
+const net = require('net');
+
+function checkPortAvailable(port) {
+  return new Promise((resolve) => {
+    const tester = net.createServer();
+    tester.once('error', () => resolve(false));
+    tester.once('listening', () => {
+      tester.close(() => resolve(true));
+    });
+    tester.listen(port, '0.0.0.0');
+  });
+}
+
+async function startServer() {
+  const isPrimaryFree = await checkPortAvailable(PRIMARY_PORT);
+  const portToUse = isPrimaryFree ? PRIMARY_PORT : FALLBACK_PORT;
+  activePort = portToUse;
+
+  if (!isPrimaryFree) {
+    console.log(
+      `ℹ️ El puerto ${PRIMARY_PORT} ya está en uso (probablemente por Biblia e Himnario OBS). Iniciando en puerto ${FALLBACK_PORT} y enlazando automáticamente...`
+    );
+  }
+
+  server.on('error', (err) => {
+    console.error('Error en el servidor HTTP:', err);
   });
 
-  server.listen(portToTry, '0.0.0.0', () => {
-    activePort = portToTry;
+  server.listen(portToUse, '0.0.0.0', () => {
     const ips = getLocalNetworkIPs();
     const lanIp = ips.length > 0 ? ips[0].address : 'localhost';
     setupClyBridgeIfNeeded();
@@ -2097,7 +2111,7 @@ function startServer(portToTry) {
   });
 }
 
-startServer(PRIMARY_PORT);
+startServer();
 
 process.on('SIGTERM', async () => {
   await gracefulShutdown();
