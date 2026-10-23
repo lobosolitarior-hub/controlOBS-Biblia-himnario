@@ -10,6 +10,19 @@
 const { app, BrowserWindow, Tray, Menu, shell, clipboard, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
+
+// Evitar que se abran dos instancias al mismo tiempo
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+  process.exit(0);
+}
+
+// Identificador de modelo de usuario para que Windows muestre el ícono en la barra de tareas
+if (process.platform === 'win32') {
+  app.setAppUserModelId('org.adventista.controlobsremoto');
+}
 
 let tray = null;
 let mainWindow = null;
@@ -38,14 +51,6 @@ function performCleanExit(options = {}) {
     app.quit();
     setTimeout(() => process.exit(0), 400);
   }
-}
-
-// Evitar que se abran dos instancias al mismo tiempo; si otra instancia o instalador
-// pide cerrar (--quit / --uninstall), cerramos limpiamente la instancia activa.
-const gotTheLock = app.requestSingleInstanceLock();
-if (!gotTheLock) {
-  app.quit();
-  process.exit(0);
 }
 
 // Icono PNG 16x16 en base64 para la bandeja del sistema (Windows Tray / Mac Menu Bar)
@@ -260,6 +265,44 @@ function rebuildTrayMenu() {
         },
       ],
     },
+    ...(process.platform === 'win32'
+      ? [
+          { type: 'separator' },
+          {
+            label: '🗑️ Desinstalar Control OBS Remoto...',
+            click: () => {
+              const choice = dialog.showMessageBoxSync({
+                type: 'warning',
+                buttons: ['Cancelar', 'Sí, desinstalar'],
+                defaultId: 0,
+                cancelId: 0,
+                title: 'Desinstalar Control OBS Remoto',
+                message: '¿Deseas cerrar y desinstalar Control OBS Remoto?',
+                detail: 'Tus configuraciones y pistas MP3 NO se borrarán.',
+              });
+              if (choice === 1) {
+                try {
+                  app.setLoginItemSettings({ openAtLogin: false });
+                  const installDir = path.dirname(process.execPath);
+                  const uninstallerPath = path.join(installDir, 'Uninstall Control OBS Remoto.exe');
+                  if (fs.existsSync(uninstallerPath)) {
+                    const child = spawn(uninstallerPath, [], {
+                      detached: true,
+                      stdio: 'ignore',
+                    });
+                    child.unref();
+                  } else {
+                    shell.openExternal('ms-settings:appsfeatures');
+                  }
+                } catch {}
+                isQuitting = true;
+                if (tray) tray.destroy();
+                app.exit(0);
+              }
+            },
+          },
+        ]
+      : []),
     { type: 'separator' },
     {
       label: '👨‍💻 Autor: Ing. Rubén H. Armendáriz Tamayo (Agradecimientos)',
@@ -307,13 +350,16 @@ app.whenReady().then(() => {
   }
 
   if (app.isPackaged) {
-    const currentLogin = app.getLoginItemSettings();
-    if (currentLogin.openAtLogin === false && !process.env.SKIP_DEFAULT_AUTOSTART) {
+    const autoStartFlagFile = path.join(app.getPath('userData'), 'autostart-initialized.json');
+    if (!fs.existsSync(autoStartFlagFile) && !process.env.SKIP_DEFAULT_AUTOSTART) {
       app.setLoginItemSettings({
         openAtLogin: true,
         openAsHidden: true,
         args: ['--hidden'],
       });
+      try {
+        fs.writeFileSync(autoStartFlagFile, JSON.stringify({ initialized: true }), 'utf8');
+      } catch {}
     }
   }
 
