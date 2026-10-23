@@ -5,7 +5,7 @@ Sistema de **control remoto inalámbrico desde celular o tablet** y proyección 
 - **📺 Monitor en Vivo en tu Celular o Tablet:** Visualiza en tiempo real lo que está saliendo al aire en OBS Studio, qué escena está activa y el estado de **Transmisión (`🔴 EN VIVO`)** y **Grabación (`⏺️ REC`)**.
 - **🎬 Control de Escenas y Fuentes de OBS:** Cambia entre cualquier escena de OBS con un toque y **muestra u oculta fuentes individuales** (`👁️ Visible / 🚫 Oculto` para cámaras, imágenes, diapositivas, videos o plecas) dentro de la escena actual, además de soporte para **Modo Estudio**.
 - **⌨️ Teclado Remoto y Atajos 100% Personalizables:**
-  - Botones grandes en pantalla para **`Av Pág` (Siguiente diapositiva)**, **`Re Pág` (Anterior)**, **Flechas (`⬅️`, `➡️`, `⬆️`, `⬇️`)**, **`Espacio`**, **`Enter`**, **`F5` (Iniciar PowerPoint)**, **`Shift+F5`**, **`B` (Pantalla negra)** y **`Esc`**.
+  - Botones grandes en pantalla para **`Re Pág` (Anterior)**, **`Av Pág` (Siguiente diapositiva)**, **Flechas (`⬅️`, `➡️`, `⬆️`, `⬇️`)**, **`Espacio`**, **`Enter`**, **`F5` (Iniciar PowerPoint)**, **`Shift+F5`**, **`B` (Pantalla negra)** y **`Esc`**.
   - **Editor de Atajos integrado:** Agrega, edita, cambia el tamaño o elimina las teclas que tú quieras tener en pantalla (incluyendo combinaciones con `Ctrl`, `Alt/Option`, `Shift`, `Cmd/Win`) y dirígelas a PowerPoint, Keynote, Canva u OBS.
 - **🎞️ Control de Fuentes Multimedia y Mezclador de Audio de OBS:** Botones de **Play**, **Pausa**, **Reiniciar**, **Stop** y barra de progreso interactiva para cualquier video en OBS, más control para silenciar (`🔇`) o ajustar el volumen de micrófonos y pistas.
 - **🎵 Nuevo Himnario Adventista completo (614 himnos):** Letra sincronizada con avance automático o manual, soporte para pistas locales (**Cantado**, **Instrumental** o **Solo letra**), salto inmediato a cualquier estrofa y cambio automático a la escena `Himnario` en OBS.
@@ -17,8 +17,8 @@ Sistema de **control remoto inalámbrico desde celular o tablet** y proyección 
 
 1. Ve a la sección **[Releases](../../releases)** de este repositorio en GitHub.
 2. Descarga el instalador para tu computadora de cabina:
-   - **Windows:** `Control OBS Remoto Setup 1.0.2.exe` (o la versión portable `Control OBS Remoto 1.0.2.exe`).
-   - **Mac (macOS):** `Control OBS Remoto-1.0.2-arm64.dmg` (Apple Silicon M1/M2/M3/M4) o `Control OBS Remoto-1.0.2.dmg` (Intel).
+   - **Windows:** `Control OBS Remoto Setup 1.0.3.exe` (o la versión portable `Control OBS Remoto 1.0.3.exe`).
+   - **Mac (macOS):** `Control OBS Remoto-1.0.3-arm64.dmg` (Apple Silicon M1/M2/M3/M4) o `Control OBS Remoto-1.0.3.dmg` (Intel).
 3. **¿Cómo se abre y cómo se conecta el celular?**
    - En **Windows**, el instalador crea automáticamente un acceso directo en tu **Escritorio** llamado **`Control OBS Remoto`** y abre el programa al finalizar la instalación.
    - Al abrir **`Control OBS Remoto`** desde el Escritorio (en Windows o en Mac), verás de inmediato en pantalla el **Panel de Cabina** con:
@@ -68,7 +68,7 @@ Si deseas proyectar también los himnos y la Biblia desde tu celular/tablet:
 2. Toca el botón **`✏️ Configurar Teclas`**.
 3. Puedes tocar **`➕ Nuevo Atajo`** o **`✏️ Editar`** sobre cualquier botón para elegir:
    - **Nombre e Icono** del botón (ej. `⏭️ Siguiente Diapo`, `🎬 Iniciar PPT`, `⬛ Pantalla Negra`).
-   - **Tamaño** (`Grande` para botones principales como `Av Pág` y `Re Pág`, o `Normal`) y **Color**.
+   - **Tamaño** (`Grande` para botones principales como `Re Pág` y `Av Pág`, o `Normal`) y **Color**.
    - **Tecla a enviar** (o usar el botón **`🎹 Detectar`** presionando directamente la tecla en tu teclado) y combinaciones con `Ctrl`, `Alt/Option`, `Shift`, `Cmd/Win`.
 4. **Nota para usuarios de Mac (macOS):** La primera vez que envíes teclas hacia PowerPoint o Keynote en Mac, el sistema te pedirá autorizar el permiso en **Ajustes del Sistema → Privacidad y Seguridad → Accesibilidad**.
 

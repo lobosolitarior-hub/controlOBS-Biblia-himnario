@@ -1,7 +1,7 @@
 {
   "name": "control-obs-remoto",
   "productName": "Control OBS Remoto",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Centro de Control Remoto Inalámbrico (Celular / Tablet) para OBS Studio con Monitor en Vivo, Escenas, Teclado/Atajos Personalizables, Multimedia, Santa Biblia (RVR1960/DHH) e Himnario Adventista (614 himnos)",
   "author": "Ing. Rubén Humberto Armendáriz Tamayo <lobosolitarior@gmail.com>",
   "license": "MIT",

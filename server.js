@@ -72,17 +72,6 @@ ensureUserAudioFolders(DEFAULT_USER_AUDIO_ROOT);
 // Atajos de teclado predeterminados (100% personalizables desde el celular/tablet)
 const DEFAULT_SHORTCUTS = [
   {
-    id: 'pgdn',
-    label: 'Av Pág (Siguiente)',
-    icon: '⏭️',
-    key: 'PageDown',
-    modifiers: [],
-    target: 'both',
-    targetApp: '',
-    color: 'primary',
-    size: 'large',
-  },
-  {
     id: 'pgup',
     label: 'Re Pág (Anterior)',
     icon: '⏮️',
@@ -91,6 +80,17 @@ const DEFAULT_SHORTCUTS = [
     target: 'both',
     targetApp: '',
     color: 'secondary',
+    size: 'large',
+  },
+  {
+    id: 'pgdn',
+    label: 'Av Pág (Siguiente)',
+    icon: '⏭️',
+    key: 'PageDown',
+    modifiers: [],
+    target: 'both',
+    targetApp: '',
+    color: 'primary',
     size: 'large',
   },
   {
@@ -247,6 +247,16 @@ if (fs.existsSync(CONFIG_PATH)) {
     obsConfig.url = normalizeObsUrl(obsConfig.url);
     if (!Array.isArray(obsConfig.customShortcuts) || obsConfig.customShortcuts.length === 0) {
       obsConfig.customShortcuts = DEFAULT_SHORTCUTS;
+    } else {
+      // Asegurar que Re Pág esté a la izquierda y Av Pág a su derecha
+      const idxPgdn = obsConfig.customShortcuts.findIndex((s) => s && s.id === 'pgdn');
+      const idxPgup = obsConfig.customShortcuts.findIndex((s) => s && s.id === 'pgup');
+      if (idxPgdn !== -1 && idxPgup !== -1 && idxPgdn < idxPgup) {
+        const [pgdnItem] = obsConfig.customShortcuts.splice(idxPgdn, 1);
+        const newPgupIdx = obsConfig.customShortcuts.findIndex((s) => s && s.id === 'pgup');
+        obsConfig.customShortcuts.splice(newPgupIdx + 1, 0, pgdnItem);
+        saveConfig();
+      }
     }
     if (obsConfig.audioRootDir) {
       ensureUserAudioFolders(obsConfig.audioRootDir);

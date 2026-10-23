@@ -610,7 +610,7 @@
       scLabelInput.value = '';
       scIconInput.value = '⌨️';
       scSizeInput.value = 'normal';
-      scKeySelect.value = 'PageDown';
+      scKeySelect.value = 'PageUp';
       modCtrl.checked = false;
       modAlt.checked = false;
       modShift.checked = false;
