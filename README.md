@@ -17,8 +17,8 @@ Sistema de **control remoto inalámbrico desde celular o tablet** y proyección 
 
 1. Ve a la sección **[Releases](../../releases)** de este repositorio en GitHub.
 2. Descarga el instalador para tu computadora de cabina:
-   - **Windows:** `Control OBS Remoto Setup 1.0.1.exe` (o la versión portable `Control OBS Remoto 1.0.1.exe`).
-   - **Mac (macOS):** `Control OBS Remoto-1.0.1-arm64.dmg` (Apple Silicon M1/M2/M3/M4) o `Control OBS Remoto-1.0.1.dmg` (Intel).
+   - **Windows:** `Control OBS Remoto Setup 1.0.2.exe` (o la versión portable `Control OBS Remoto 1.0.2.exe`).
+   - **Mac (macOS):** `Control OBS Remoto-1.0.2-arm64.dmg` (Apple Silicon M1/M2/M3/M4) o `Control OBS Remoto-1.0.2.dmg` (Intel).
 3. **¿Cómo se abre y cómo se conecta el celular?**
    - En **Windows**, el instalador crea automáticamente un acceso directo en tu **Escritorio** llamado **`Control OBS Remoto`** y abre el programa al finalizar la instalación.
    - Al abrir **`Control OBS Remoto`** desde el Escritorio (en Windows o en Mac), verás de inmediato en pantalla el **Panel de Cabina** con:
